@@ -1,0 +1,132 @@
+{
+    "destination": {
+        "name": "Mumbai & Gujarat",
+        "coordinates": {
+            "latitude": 19.0759,
+            "longitude": 72.8777
+        }
+    },
+    "travel_dates": "December 10-18, 2025",
+    "duration": 2,
+    "budget": {
+        "currency": "USD",
+        "amount": 1000
+    },
+    "companions": "Family (2 adults, 2 kids)",
+    "activities": ["Historical sites", "Street food", "Beaches", "Cultural experiences", "Wildlife safari"],
+    "itinerary": [
+        {
+            "day": 1,
+            "morning": {
+                "activity": "Visit the Gateway of India",
+                "location": {
+                    "name": "Gateway of India",
+                    "coordinates": {
+                        "latitude": 19.0484,
+                        "longitude": 72.8777
+                    }
+                }
+            },
+            "afternoon": {
+                "activity": "Explore the Chhatrapati Shivaji Maharaj Vastu Sangrahalaya (CSMVS) museum",
+                "location": {
+                    "name": "Chhatrapati Shivaji Maharaj Vastu Sangrahalaya (CSMVS)",
+                    "coordinates": {
+                        "latitude": 19.0333,
+                        "longitude": 72.8358
+                    }
+                }
+            },
+            "evening": {
+                "activity": "Take a sunset stroll along Marine Drive",
+                "location": {
+                    "name": "Marine Drive",
+                    "coordinates": {
+                        "latitude": 19.0456,
+                        "longitude": 72.8744
+                    }
+                }
+            },
+            "meals": {
+                "breakfast": {
+                    "name": "Juhu Beach's street food stalls",
+                    "coordinates": {
+                        "latitude": 19.0456,
+                        "longitude": 72.8744
+                    }
+                },
+                "lunch": {
+                    "name": "Vegetarian restaurant at the Haji Ali Dargah",
+                    "coordinates": {
+                        "latitude": 19.0444,
+                        "longitude": 72.8756
+                    }
+                },
+                "dinner": {
+                    "name": "Seafood restaurant at the Colaba Causeway",
+                    "coordinates": {
+                        "latitude": 19.0467,
+                        "longitude": 72.8767
+                    }
+                }
+            }
+        },
+        {
+            "day": 2,
+            "morning": {
+                "activity": "Visit the Ahmedabad Museum",
+                "location": {
+                    "name": "Ahmedabad Museum",
+                    "coordinates": {
+                        "latitude": 23.0333,
+                        "longitude": 72.5878
+                    }
+                }
+            },
+            "afternoon": {
+                "activity": "Explore the Sabarmati Ashram",
+                "location": {
+                    "name": "Sabarmati Ashram",
+                    "coordinates": {
+                        "latitude": 23.0333,
+                        "longitude": 72.5878
+                    }
+                }
+            },
+            "evening": {
+                "activity": "Relax on the beaches of Veraval",
+                "location": {
+                    "name": "Veraval Beach",
+                    "coordinates": {
+                        "latitude": 20.5333,
+                        "longitude": 69.5333
+                    }
+                }
+            },
+            "meals": {
+                "breakfast": {
+                    "name": "Vegetarian restaurant at the Veraval Beach",
+                    "coordinates": {
+                        "latitude": 20.5333,
+                        "longitude": 69.5333
+                    }
+                },
+                "lunch": {
+                    "name": "Street food stalls at the Veraval Beach",
+                    "coordinates": {
+                        "latitude": 20.5333,
+                        "longitude": 69.5333
+                    }
+                },
+                "dinner": {
+                    "name": "Local restaurant serving Gujarati cuisine",
+                    "coordinates": {
+                        "latitude": 20.5333,
+                        "longitude": 69.5333
+                    }
+                }
+            }
+        }
+    ],
+    "other_preferences": "Prefer kid-friendly activities, vegetarian food options, and a mix of relaxation & exploration"
+}

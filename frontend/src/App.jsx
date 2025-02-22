@@ -7,20 +7,21 @@ import TripPlanner from './pages/TripPlanner';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import Itenary from './pages/Itenary';
+import MapComponent from './components/TestMap';
 const App = () => {
     return (
         <Router>
             <Navbar />
             <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path='/trip-planner' element={<TripPlanner/>}/>
-                <Route path='/blog' element={<Blog/>}/>
-                <Route path='blog/:id' element={<BlogPost/>}/>
-                <Route path='/itenary' element={<Itenary/>}/>
+                <Route path="/trip-planner" element={<TripPlanner />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="blog/:id" element={<BlogPost />} />
+                <Route path="/itenary" element={<Itenary />} />
+                <Route path="/map" element={<MapComponent />} />
             </Routes>
-          <Footer/>
+            <Footer />
         </Router>
-        
     );
 };
 

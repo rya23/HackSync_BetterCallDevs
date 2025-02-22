@@ -1,0 +1,161 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [77.2167, 28.6315]
+            },
+            "properties": {
+                "NGO Name": "Save the Children Delhi",
+                "City": "Delhi",
+                "Address": "Connaught Place, Delhi"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [72.8469, 19.1197]
+            },
+            "properties": {
+                "NGO Name": "Helping Hands Mumbai",
+                "City": "Mumbai",
+                "Address": "Andheri West, Mumbai"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [77.5946, 12.9716]
+            },
+            "properties": {
+                "NGO Name": "Aasha Trust Bangalore",
+                "City": "Bangalore",
+                "Address": "Indiranagar, Bangalore"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [77.2182, 28.6077]
+            },
+            "properties": {
+                "NGO Name": "Pratham Education Foundation",
+                "City": "Delhi",
+                "Address": "Khan Market, Delhi"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [72.8333, 18.975]
+            },
+            "properties": {
+                "NGO Name": "Goonj",
+                "City": "Mumbai",
+                "Address": "Parel, Mumbai"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [77.575, 12.9711]
+            },
+            "properties": {
+                "NGO Name": "Makkala Jagriti",
+                "City": "Bangalore",
+                "Address": "Madiwala, Bangalore"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [77.1025, 28.7041]
+            },
+            "properties": {
+                "NGO Name": "Ankuran",
+                "City": "Delhi",
+                "Address": "Lajpat Nagar, Delhi"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [72.9556, 19.076]
+            },
+            "properties": {
+                "NGO Name": "Child Rights and You (CRY)",
+                "City": "Mumbai",
+                "Address": "Dadar, Mumbai"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [77.6156, 12.9353]
+            },
+            "properties": {
+                "NGO Name": "Bangalore Rescue",
+                "City": "Bangalore",
+                "Address": "Sankey Tank, Bangalore"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [77.1939, 28.627]
+            },
+            "properties": {
+                "NGO Name": "Teach For India",
+                "City": "Delhi",
+                "Address": "South Extension, Delhi"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [72.8506, 19.0988]
+            },
+            "properties": {
+                "NGO Name": "V Care Foundation",
+                "City": "Mumbai",
+                "Address": "Juhu, Mumbai"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [77.5946, 12.929]
+            },
+            "properties": {
+                "NGO Name": "Bangalore Women's Forum",
+                "City": "Bangalore",
+                "Address": "Koramangala, Bangalore"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [77.1025, 28.6129]
+            },
+            "properties": {
+                "NGO Name": "Sewa India",
+                "City": "Delhi",
+                "Address": "Connaught Place, Delhi"
+            }
+        }
+    ]
+}
