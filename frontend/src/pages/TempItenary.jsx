@@ -4,166 +4,7 @@ import { useLocation, Navigate } from 'react-router-dom';
 import { HfInference } from '@huggingface/inference';
 import TestData from './TestData.json';
 import MapComponent from '../components/TestMap';
-import { Page, Text, View, Document, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
-import EmailModal from '../components/EmailModal';
-
 const client = new HfInference('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');
-
-const styles = StyleSheet.create({
-    page: {
-        padding: 30,
-        backgroundColor: '#ffffff',
-    },
-    section: {
-        marginBottom: 20,
-        padding: 15,
-        borderRadius: 5,
-    },
-    header: {
-        fontSize: 24,
-        marginBottom: 15,
-        color: '#1a365d',
-        textTransform: 'uppercase',
-        textAlign: 'center',
-        paddingBottom: 10,
-        borderBottom: 2,
-        borderColor: '#e2e8f0',
-    },
-    subHeader: {
-        fontSize: 18,
-        color: '#2d3748',
-        marginBottom: 12,
-        fontWeight: 'bold',
-    },
-    text: {
-        fontSize: 12,
-        marginBottom: 8,
-        color: '#4a5568',
-        lineHeight: 1.5,
-    },
-    highlight: {
-        backgroundColor: '#f7fafc',
-        padding: 10,
-        marginBottom: 10,
-        borderRadius: 4,
-    },
-    dayHeader: {
-        fontSize: 16,
-        color: '#2b6cb0',
-        fontWeight: 'bold',
-        marginTop: 15,
-        marginBottom: 10,
-        paddingBottom: 5,
-        borderBottom: 1,
-        borderColor: '#bee3f8',
-    },
-    timeBlock: {
-        marginBottom: 12,
-        paddingLeft: 10,
-    },
-    label: {
-        color: '#718096',
-        fontSize: 10,
-        textTransform: 'uppercase',
-        marginBottom: 3,
-    },
-    mealSection: {
-        marginTop: 8,
-        padding: 8,
-        backgroundColor: '#f0fff4',
-        borderRadius: 4,
-    },
-    coordinates: {
-        fontSize: 10,
-        color: '#718096',
-        fontStyle: 'italic',
-    },
-    footer: {
-        position: 'absolute',
-        bottom: 30,
-        left: 30,
-        right: 30,
-        textAlign: 'center',
-        color: '#a0aec0',
-        fontSize: 10,
-        borderTop: 1,
-        borderColor: '#e2e8f0',
-        paddingTop: 10,
-    },
-});
-
-const TravelPDF = ({ data }) => (
-    <Document>
-        <Page style={styles.page}>
-            <View style={styles.section}>
-                <Text style={styles.header}>Travel Plan</Text>
-
-                <View style={styles.highlight}>
-                    <Text style={styles.label}>Destination</Text>
-                    <Text style={styles.text}>{data.destination.name}</Text>
-                    <Text style={styles.coordinates}>
-                        {data.destination.coordinates.latitude}, {data.destination.coordinates.longitude}
-                    </Text>
-                </View>
-
-                <View style={styles.highlight}>
-                    <Text style={styles.label}>Trip Details</Text>
-                    <Text style={styles.text}>Travel Date: {data.travel_dates}</Text>
-                    <Text style={styles.text}>Duration: {data.duration} days</Text>
-                    <Text style={styles.text}>
-                        Budget: {data.budget.currency} {data.budget.amount}
-                    </Text>
-                </View>
-
-                <View style={styles.highlight}>
-                    <Text style={styles.label}>Trip Preferences</Text>
-                    <Text style={styles.text}>Companions: {data.companions}</Text>
-                    <Text style={styles.text}>Activities: {data.activities.join(', ')}</Text>
-                    <Text style={styles.text}>Other Preferences: {data.other_preferences}</Text>
-                </View>
-            </View>
-
-            <View style={styles.section}>
-                <Text style={styles.subHeader}>Itinerary</Text>
-                {data.itinerary.map((dayPlan) => (
-                    <View key={dayPlan.day}>
-                        <Text style={styles.dayHeader}>Day {dayPlan.day}</Text>
-
-                        <View style={styles.timeBlock}>
-                            <Text style={styles.label}>Morning</Text>
-                            <Text style={styles.text}>
-                                {dayPlan.morning.activity} at {dayPlan.morning.location.name}
-                            </Text>
-                        </View>
-
-                        <View style={styles.timeBlock}>
-                            <Text style={styles.label}>Afternoon</Text>
-                            <Text style={styles.text}>
-                                {dayPlan.afternoon.activity} at {dayPlan.afternoon.location.name}
-                            </Text>
-                        </View>
-
-                        <View style={styles.timeBlock}>
-                            <Text style={styles.label}>Evening</Text>
-                            <Text style={styles.text}>
-                                {dayPlan.evening.activity} at {dayPlan.evening.location.name}
-                            </Text>
-                        </View>
-
-                        <View style={styles.mealSection}>
-                            <Text style={styles.label}>Meals</Text>
-                            <Text style={styles.text}>Breakfast: {dayPlan.meals.breakfast.name}</Text>
-                            <Text style={styles.text}>Lunch: {dayPlan.meals.lunch.name}</Text>
-                            <Text style={styles.text}>Dinner: {dayPlan.meals.dinner.name}</Text>
-                        </View>
-                    </View>
-                ))}
-            </View>
-
-            <Text style={styles.footer}>Generated by Your Travel Planner</Text>
-        </Page>
-    </Document>
-);
 
 export default function Itinerary() {
     const location = useLocation();
@@ -171,7 +12,6 @@ export default function Itinerary() {
     const [aiItinerary, setAiItinerary] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
     useEffect(() => {
         const generateAIItinerary = async () => {
@@ -315,6 +155,20 @@ export default function Itinerary() {
         return <div>{error}</div>;
     }
 
+    const downloadItinerary = () => {
+        const dataStr = JSON.stringify(aiItinerary, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'itinerary.json';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             {/* Header Section */}
@@ -425,28 +279,22 @@ export default function Itinerary() {
                 transition={{ delay: 0.5 }}
                 className="max-w-7xl mx-auto mt-20 flex justify-center gap-4"
             >
-                <PDFDownloadLink
-                    document={<TravelPDF data={aiItinerary} />}
-                    fileName="travel_plan.pdf"
-                    className="px-6 py-3 bg-black text-white rounded-xl font-medium hover:bg-gray-900 transition-colors"
-                >
-                    {({ loading }) => (loading ? 'Generating PDF...' : 'Download PDF')}
-                </PDFDownloadLink>
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setIsEmailModalOpen(true)}
+                    onClick={downloadItinerary}
+                    className="px-6 py-3 bg-black text-white rounded-xl font-medium hover:bg-gray-900 transition-colors"
+                >
+                    Download Itinerary
+                </motion.button>
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     className="px-6 py-3 border-2 border-black text-black rounded-xl font-medium hover:bg-gray-50 transition-colors"
                 >
-                    Email Itinerary
+                    Share Itinerary
                 </motion.button>
             </motion.div>
-
-            <EmailModal 
-                isOpen={isEmailModalOpen}
-                onClose={() => setIsEmailModalOpen(false)}
-                itineraryData={aiItinerary}
-            />
         </div>
     );
 }
