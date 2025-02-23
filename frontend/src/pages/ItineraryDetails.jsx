@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { Page, Text, View, Document, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
+import airportCodes from 'airport-codes';
 
 const styles = StyleSheet.create({
     page: { padding: 30, backgroundColor: '#ffffff' },
@@ -78,6 +79,40 @@ const model = genAI.getGenerativeModel({
     },
 });
 
+// Add this helper function before the useEffect hooks
+const getCityAirportCode = async (cityName) => {
+    try {
+        // Fetch airports data from local JSON file
+        const response = await axios.get('/airports.json');
+        const airports = response.data;
+
+        // Clean up the city name
+        const cleanCityName = cityName
+            .toLowerCase()
+            .replace(/city|international airport|airport/g, '')
+            .trim();
+
+        // Find matching airports
+        const matchingAirports = airports.filter((airport) => {
+            const airportCity = airport.city.toLowerCase();
+            return airportCity.includes(cleanCityName) || cleanCityName.includes(airportCity);
+        });
+
+        // Sort by international status (prefer international airports)
+        const sortedAirports = matchingAirports.sort((a, b) => {
+            const aIsIntl = a.name.toLowerCase().includes('international');
+            const bIsIntl = b.name.toLowerCase().includes('international');
+            return bIsIntl - aIsIntl;
+        });
+
+        // Return the IATA code of the first (most relevant) airport
+        return sortedAirports.length > 0 ? sortedAirports[0].iata : null;
+    } catch (error) {
+        console.error('Error loading airports data:', error);
+        return null;
+    }
+};
+
 export default function ItineraryDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -98,6 +133,12 @@ export default function ItineraryDetails() {
     const [showHotels, setShowHotels] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const hotelsPerPage = 4;
+
+    // Add these new state variables near other useState declarations
+    const [flights, setFlights] = useState([]);
+    const [flightsLoading, setFlightsLoading] = useState(false);
+    const [showFlights, setShowFlights] = useState(false);
+    const [userLocation, setUserLocation] = useState(null);
 
     useEffect(() => {
         const fetchItinerary = async () => {
@@ -148,7 +189,7 @@ export default function ItineraryDetails() {
                         hotelSource: 'ALL',
                     },
                     headers: {
-                        Authorization: `Bearer Fbn4dUv3lWLfIyGmVQO9gKs9zkMd`,
+                        Authorization: `Bearer dOyXKlAJ1yQrQLBbALQNms90DGm6`,
                     },
                 };
 
@@ -163,6 +204,96 @@ export default function ItineraryDetails() {
 
         fetchHotels();
     }, [itinerary?.destination?.coordinates]);
+
+    // Get user's location and nearest airport
+    useEffect(() => {
+        const getUserLocation = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    try {
+                        // Get nearest airport using Amadeus API
+                        const options = {
+                            method: 'GET',
+                            url: 'https://test.api.amadeus.com/v1/reference-data/locations/airports',
+                            params: {
+                                latitude: latitude,
+                                longitude: longitude,
+                                radius: 100,
+                                sort: 'distance',
+                            },
+                            headers: {
+                                Authorization: `Bearer dOyXKlAJ1yQrQLBbALQNms90DGm6`,
+                            },
+                        };
+
+                        const response = await axios.request(options);
+                        if (response.data.data.length > 0) {
+                            setUserLocation({
+                                latitude,
+                                longitude,
+                                nearestAirport: response.data.data[0],
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error fetching nearest airport:', error);
+                    }
+                });
+            }
+        };
+
+        getUserLocation();
+    }, []);
+
+    // Update the flight search useEffect
+    useEffect(() => {
+        const fetchFlights = async () => {
+            if (!userLocation?.nearestAirport || !itinerary?.destination?.name) return;
+
+            setFlightsLoading(true);
+            try {
+                // Get destination airport code
+                const destinationCode = await getCityAirportCode(itinerary.destination.name);
+
+                if (!destinationCode) {
+                    console.error('Could not find airport code for destination');
+                    return;
+                }
+
+                // Search for flights directly using airport codes
+                const flightOptions = {
+                    method: 'GET',
+                    url: 'https://test.api.amadeus.com/v2/shopping/flight-offers',
+                    params: {
+                        originLocationCode: userLocation.nearestAirport.iataCode,
+                        destinationLocationCode: destinationCode,
+                        departureDate: itinerary.travel_dates
+                            ? (() => {
+                                  const date = new Date(itinerary.travel_dates.split(' - ')[0]);
+                                  date.setDate(date.getDate() + 10);
+                                  return date.toISOString().split('T')[0];
+                              })()
+                            : '2024-06-11',
+                        adults: '1',
+                        max: '5',
+                        currencyCode: 'INR',
+                    },
+                    headers: {
+                        Authorization: `Bearer CegOcGSfCKLyXT6lWDVEriXRtTsq`,
+                    },
+                };
+
+                const flightResponse = await axios.request(flightOptions);
+                setFlights(flightResponse.data.data || []);
+            } catch (error) {
+                console.error('Error fetching flights:', error);
+            } finally {
+                setFlightsLoading(false);
+            }
+        };
+
+        fetchFlights();
+    }, [userLocation, itinerary?.destination?.name, itinerary?.travel_dates]);
 
     // Handle chat submission
     const handleChatSubmit = async (e) => {
@@ -255,6 +386,28 @@ Dinner: ${day.meals?.dinner?.name || 'Not specified'}
     const handleHotelClick = (hotelName) => {
         const searchQuery = encodeURIComponent(hotelName);
         window.open(`https://www.google.com/search?q=${searchQuery}`, '_blank');
+    };
+
+    // Add this helper function before the return statement
+    const getBookingLinks = (flight) => {
+        const departureCode = flight.itineraries[0].segments[0].departure.iataCode;
+        const arrivalCode = flight.itineraries[0].segments[flight.itineraries[0].segments.length - 1].arrival.iataCode;
+        const departureDate = flight.itineraries[0].segments[0].departure.at.split('T')[0];
+
+        return [
+            {
+                name: 'Google Flights',
+                url: `https://www.google.com/travel/flights?q=Flights%20from%20${departureCode}%20to%20${arrivalCode}%20on%20${departureDate}`,
+            },
+            {
+                name: 'Kayak',
+                url: `https://www.kayak.com/flights/${departureCode}-${arrivalCode}/${departureDate}`,
+            },
+            {
+                name: 'Skyscanner',
+                url: `https://www.skyscanner.com/transport/flights/${departureCode}/${arrivalCode}/${departureDate}`,
+            },
+        ];
     };
 
     if (loading) {
@@ -546,6 +699,206 @@ Dinner: ${day.meals?.dinner?.name || 'Not specified'}
                                 </>
                             ) : (
                                 <p className="text-gray-600 text-center py-8">No hotels found in this area.</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* Flights Section */}
+                <div className="mt-8">
+                    <button
+                        onClick={() => setShowFlights(!showFlights)}
+                        className="w-full bg-white rounded-xl shadow-lg p-4 flex items-center justify-between hover:bg-gray-50 transition-all"
+                    >
+                        <h2 className="text-2xl font-semibold">Flights to {itinerary.destination.name}</h2>
+                        <svg
+                            className={`w-6 h-6 transform transition-transform ${showFlights ? 'rotate-180' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    {showFlights && (
+                        <div className="mt-4 bg-white rounded-xl shadow-lg p-6">
+                            {flightsLoading ? (
+                                <div className="flex justify-center p-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+                                </div>
+                            ) : flights.length > 0 ? (
+                                <div className="space-y-6">
+                                    {flights.map((flight, index) => (
+                                        <div key={index} className="border rounded-lg p-6 hover:shadow-md transition-shadow">
+                                            {/* Flight Header */}
+                                            <div className="flex justify-between items-center mb-4">
+                                                <div>
+                                                    <span className="text-sm text-gray-500">Flight Option {index + 1}</span>
+                                                    <p className="text-lg font-semibold">
+                                                        Total Duration:{' '}
+                                                        {flight.itineraries[0].duration
+                                                            .replace('PT', '')
+                                                            .replace('H', 'h ')
+                                                            .replace('M', 'm')}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-2xl font-bold">
+                                                        {flight.price.total} {flight.price.currency}
+                                                    </p>
+                                                    <p className="text-sm text-gray-500">
+                                                        {flight.travelerPricings[0].fareDetailsBySegment[0].cabin} Class
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Flight Segments */}
+                                            <div className="space-y-4">
+                                                {flight.itineraries[0].segments.map((segment, segIndex) => (
+                                                    <div key={segIndex} className="flex items-start space-x-4">
+                                                        {/* Airline Logo/Code */}
+                                                        <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                            <span className="font-bold">{segment.carrierCode}</span>
+                                                        </div>
+
+                                                        {/* Flight Details */}
+                                                        <div className="flex-1">
+                                                            <div className="flex justify-between items-start">
+                                                                {/* Departure */}
+                                                                <div>
+                                                                    <p className="font-semibold">{segment.departure.iataCode}</p>
+                                                                    <p className="text-sm text-gray-600">
+                                                                        {new Date(segment.departure.at).toLocaleTimeString()}
+                                                                    </p>
+                                                                    {segment.departure.terminal && (
+                                                                        <p className="text-sm text-gray-500">
+                                                                            Terminal {segment.departure.terminal}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Flight Info */}
+                                                                <div className="text-center px-4">
+                                                                    <p className="text-sm text-gray-500">
+                                                                        Flight {segment.carrierCode}-{segment.number}
+                                                                    </p>
+                                                                    <div className="flex items-center justify-center my-2">
+                                                                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                                                        <div className="w-20 h-0.5 bg-gray-300"></div>
+                                                                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                                                    </div>
+                                                                    <p className="text-sm text-gray-500">
+                                                                        {segment.duration
+                                                                            .replace('PT', '')
+                                                                            .replace('H', 'h ')
+                                                                            .replace('M', 'm')}
+                                                                    </p>
+                                                                </div>
+
+                                                                {/* Arrival */}
+                                                                <div className="text-right">
+                                                                    <p className="font-semibold">{segment.arrival.iataCode}</p>
+                                                                    <p className="text-sm text-gray-600">
+                                                                        {new Date(segment.arrival.at).toLocaleTimeString()}
+                                                                    </p>
+                                                                    {segment.arrival.terminal && (
+                                                                        <p className="text-sm text-gray-500">
+                                                                            Terminal {segment.arrival.terminal}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Aircraft Info */}
+                                                            <div className="mt-2 text-sm text-gray-500">
+                                                                <p>
+                                                                    Aircraft:{' '}
+                                                                    {flight.dictionaries?.aircraft[segment.aircraft.code] ||
+                                                                        segment.aircraft.code}
+                                                                </p>
+                                                                {segment.operating && (
+                                                                    <p>
+                                                                        Operated by:{' '}
+                                                                        {flight.dictionaries?.carriers[
+                                                                            segment.operating.carrierCode
+                                                                        ] || segment.operating.carrierCode}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Additional Info */}
+
+                                            {/* Booking Links */}
+                                            <div className="mt-6 pt-4 border-t">
+                                                <p className="text-sm font-semibold mb-3">Book this flight:</p>
+                                                <div className="flex flex-wrap gap-3">
+                                                    {getBookingLinks(flight).map((link, linkIndex) => (
+                                                        <a
+                                                            key={linkIndex}
+                                                            href={link.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md 
+                                                                     shadow-sm text-sm font-medium text-gray-700 bg-white 
+                                                                     hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+                                                        >
+                                                            {link.name}
+                                                            <svg
+                                                                className="ml-2 -mr-1 h-4 w-4"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    strokeWidth={2}
+                                                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                                                />
+                                                            </svg>
+                                                        </a>
+                                                    ))}
+
+                                                    {/* Direct Airline Link if available */}
+                                                    {flight.validatingAirlineCodes[0] && (
+                                                        <a
+                                                            href={`https://www.google.com/search?q=${flight.validatingAirlineCodes[0]}+airlines+booking`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md 
+                                                                     shadow-sm text-sm font-medium text-gray-700 bg-white 
+                                                                     hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+                                                        >
+                                                            Book with{' '}
+                                                            {flight.dictionaries?.carriers[flight.validatingAirlineCodes[0]] ||
+                                                                flight.validatingAirlineCodes[0]}
+                                                            <svg
+                                                                className="ml-2 -mr-1 h-4 w-4"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    strokeWidth={2}
+                                                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                                                />
+                                                            </svg>
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-gray-600 text-center py-8">No flights found for these dates.</p>
                             )}
                         </div>
                     )}
