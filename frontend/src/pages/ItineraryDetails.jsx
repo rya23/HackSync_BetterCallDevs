@@ -7,6 +7,7 @@ import EmailModal from '../components/EmailModal';
 import { motion } from 'framer-motion';
 import { Page, Text, View, Document, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import axios from 'axios';
 
 const styles = StyleSheet.create({
     page: { padding: 30, backgroundColor: '#ffffff' },
@@ -30,7 +31,7 @@ const TravelPDF = ({ data }) => (
                 <Text style={styles.header}>Travel Itinerary</Text>
                 <Text style={styles.text}>Destination: {data.destination?.name || 'Not specified'}</Text>
                 <Text style={styles.text}>Duration: {data.duration || 'Not specified'} days</Text>
-                <Text style={styles.text}>Travel Dates: {data.travel_dates || 'Not specified'}</Text>
+                <Text style={data.travel_dates ? styles.text : null}>Travel Dates: {data.travel_dates || 'Not specified'}</Text>
 
                 {data.itinerary.map((day) => (
                     <View key={day.day}>
@@ -82,6 +83,15 @@ export default function ItineraryDetails() {
     const [userInput, setUserInput] = useState('');
     const [isChatLoading, setIsChatLoading] = useState(false);
 
+    // Add this state near other useState declarations
+    const [hotels, setHotels] = useState([]);
+    const [hotelsLoading, setHotelsLoading] = useState(false);
+
+    // Add these new state variables near other useState declarations
+    const [showHotels, setShowHotels] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const hotelsPerPage = 4;
+
     useEffect(() => {
         const fetchItinerary = async () => {
             try {
@@ -110,6 +120,42 @@ export default function ItineraryDetails() {
 
         fetchItinerary();
     }, [id, navigate]);
+
+    // Replace the previous useEffect for hotels with this new one
+    useEffect(() => {
+        const fetchHotels = async () => {
+            if (!itinerary?.destination?.coordinates) return;
+
+            setHotelsLoading(true);
+            try {
+                const { latitude, longitude } = itinerary.destination.coordinates;
+
+                const options = {
+                    method: 'GET',
+                    url: 'https://test.api.amadeus.com/v1/reference-data/locations/hotels/by-geocode',
+                    params: {
+                        latitude: latitude,
+                        longitude: longitude,
+                        radius: 5,
+                        radiusUnit: 'KM',
+                        hotelSource: 'ALL',
+                    },
+                    headers: {
+                        Authorization: `Bearer djtHNE1sqF4dEHBfYGcjJXbVmagZ`,
+                    },
+                };
+
+                const response = await axios.request(options);
+                setHotels(response.data.data || []);
+            } catch (error) {
+                console.error('Error fetching hotels:', error);
+            } finally {
+                setHotelsLoading(false);
+            }
+        };
+
+        fetchHotels();
+    }, [itinerary?.destination?.coordinates]);
 
     // Handle chat submission
     const handleChatSubmit = async (e) => {
@@ -192,6 +238,16 @@ Dinner: ${day.meals?.dinner?.name || 'Not specified'}
         } finally {
             setIsChatLoading(false);
         }
+    };
+
+    // Add this helper function before the return statement
+    const paginatedHotels = hotels.slice((currentPage - 1) * hotelsPerPage, currentPage * hotelsPerPage);
+    const totalPages = Math.ceil(hotels.length / hotelsPerPage);
+
+    // Add this helper function before the return statement
+    const handleHotelClick = (hotelName) => {
+        const searchQuery = encodeURIComponent(hotelName);
+        window.open(`https://www.google.com/search?q=${searchQuery}`, '_blank');
     };
 
     if (loading) {
@@ -306,6 +362,155 @@ Dinner: ${day.meals?.dinner?.name || 'Not specified'}
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Hotels Section */}
+                <div className="mt-8">
+                    <button
+                        onClick={() => setShowHotels(!showHotels)}
+                        className="w-full bg-white rounded-xl shadow-lg p-4 flex items-center justify-between hover:bg-gray-50 transition-all"
+                    >
+                        <h2 className="text-2xl font-semibold">Hotels near {itinerary.destination.name}</h2>
+                        <svg
+                            className={`w-6 h-6 transform transition-transform ${showHotels ? 'rotate-180' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    {showHotels && (
+                        <div className="mt-4 bg-white rounded-xl shadow-lg p-6">
+                            {hotelsLoading ? (
+                                <div className="flex justify-center p-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+                                </div>
+                            ) : hotels.length > 0 ? (
+                                <>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {paginatedHotels.map((hotel) => (
+                                            <div
+                                                key={hotel.hotelId}
+                                                onClick={() => handleHotelClick(hotel.name)}
+                                                className="bg-white border rounded-xl p-6 hover:shadow-lg transition-shadow duration-300 relative overflow-hidden cursor-pointer hover:bg-gray-50"
+                                            >
+                                                {/* Hotel Chain Badge */}
+                                                {hotel.chainCode && (
+                                                    <span className="absolute top-4 right-4 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                                                        {hotel.chainCode}
+                                                    </span>
+                                                )}
+
+                                                <h3 className="font-semibold text-xl text-gray-900 mb-4 pr-20">{hotel.name}</h3>
+
+                                                <div className="space-y-3">
+                                                    {/* Distance Info */}
+                                                    <div className="flex items-center text-gray-600">
+                                                        <svg
+                                                            className="w-5 h-5 mr-2"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                                                            />
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                                                            />
+                                                        </svg>
+                                                        <span className="text-sm">
+                                                            {hotel.distance.value} {hotel.distance.unit} from center
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Location Info */}
+                                                    <div className="flex items-center text-gray-600">
+                                                        <svg
+                                                            className="w-5 h-5 mr-2"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945"
+                                                            />
+                                                            <path
+                                                                strokeLinecap="round"
+                                                                strokeLinejoin="round"
+                                                                strokeWidth={2}
+                                                                d="M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064"
+                                                            />
+                                                        </svg>
+                                                        <span className="text-sm">
+                                                            {hotel.geoCode.latitude.toFixed(4)},{' '}
+                                                            {hotel.geoCode.longitude.toFixed(4)}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Country Info */}
+                                                    {hotel.address && (
+                                                        <div className="flex items-center text-gray-600">
+                                                            <svg
+                                                                className="w-5 h-5 mr-2"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    strokeWidth={2}
+                                                                    d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
+                                                                />
+                                                            </svg>
+                                                            <span className="text-sm">{hotel.address.countryCode}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Pagination */}
+                                    {totalPages > 1 && (
+                                        <div className="flex justify-center items-center space-x-4 mt-8">
+                                            <button
+                                                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                                                disabled={currentPage === 1}
+                                                className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                            >
+                                                Previous
+                                            </button>
+                                            <span className="text-gray-600">
+                                                Page {currentPage} of {totalPages}
+                                            </span>
+                                            <button
+                                                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                                                disabled={currentPage === totalPages}
+                                                className="px-4 py-2 border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <p className="text-gray-600 text-center py-8">No hotels found in this area.</p>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Chat Interface */}
