@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import MapComponent from '../components/TestMap';
 import EmailModal from '../components/EmailModal';
@@ -9,20 +9,85 @@ import { Page, Text, View, Document, StyleSheet, PDFDownloadLink } from '@react-
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 import airportCodes from 'airport-codes';
+import { toast } from 'react-toastify';
 
 const styles = StyleSheet.create({
-    page: { padding: 30, backgroundColor: '#ffffff' },
-    section: { marginBottom: 20, padding: 15 },
+    page: {
+        padding: 40,
+        backgroundColor: '#ffffff',
+        fontFamily: 'Helvetica',
+    },
+    section: {
+        marginBottom: 30,
+        padding: 20,
+        borderBottom: '1pt solid #e2e8f0',
+    },
     header: {
-        fontSize: 24,
-        marginBottom: 15,
+        fontSize: 28,
+        marginBottom: 20,
         color: '#1a365d',
         textAlign: 'center',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        borderBottom: '2pt solid #1a365d',
+        paddingBottom: 10,
     },
-    text: { fontSize: 12, marginBottom: 8, color: '#4a5568' },
-    dayHeader: { fontSize: 18, marginBottom: 10, color: '#2d3748', marginTop: 15 },
-    subHeader: { fontSize: 14, marginBottom: 5, color: '#4a5568', marginTop: 10 },
-    activityText: { fontSize: 10, marginBottom: 5, color: '#718096' },
+    subTitle: {
+        fontSize: 14,
+        color: '#4a5568',
+        textAlign: 'center',
+        marginBottom: 30,
+        fontStyle: 'italic',
+    },
+    text: {
+        fontSize: 12,
+        marginBottom: 12,
+        color: '#2d3748',
+        padding: '4pt 0',
+    },
+    dayHeader: {
+        fontSize: 20,
+        marginBottom: 15,
+        marginTop: 25,
+        color: '#1a365d',
+        backgroundColor: '#f7fafc',
+        padding: '8pt',
+        borderRadius: 4,
+        fontWeight: 'bold',
+    },
+    subHeader: {
+        fontSize: 16,
+        marginBottom: 8,
+        marginTop: 12,
+        color: '#2d3748',
+        fontWeight: 'bold',
+        borderLeft: '3pt solid #4a5568',
+        paddingLeft: 8,
+    },
+    activityText: {
+        fontSize: 11,
+        marginBottom: 6,
+        color: '#4a5568',
+        paddingLeft: 12,
+        lineHeight: 1.4,
+    },
+    infoBox: {
+        backgroundColor: '#f8fafc',
+        padding: 15,
+        marginBottom: 20,
+        borderRadius: 4,
+        borderLeft: '4pt solid #1a365d',
+    },
+    footer: {
+        position: 'absolute',
+        bottom: 30,
+        left: 0,
+        right: 0,
+        textAlign: 'center',
+        color: '#718096',
+        fontSize: 10,
+        fontStyle: 'italic',
+    },
 });
 
 const TravelPDF = ({ data }) => (
@@ -30,37 +95,74 @@ const TravelPDF = ({ data }) => (
         <Page size="A4" style={styles.page}>
             <View style={styles.section}>
                 <Text style={styles.header}>Travel Itinerary</Text>
-                <Text style={styles.text}>Destination: {data.destination?.name || 'Not specified'}</Text>
-                <Text style={styles.text}>Duration: {data.duration || 'Not specified'} days</Text>
-                <Text style={data.travel_dates ? styles.text : null}>Travel Dates: {data.travel_dates || 'Not specified'}</Text>
-
+                <Text style={styles.subTitle}>Your Personalized Journey Plan</Text>
+                {/* Trip Information Box */}
+                <View style={styles.infoBox}>
+                    <Text style={styles.text}>
+                        <Text style={{ fontWeight: 'bold' }}>Destination: </Text>
+                        {data.destination?.name || 'Not specified'}
+                    </Text>
+                    <Text style={styles.text}>
+                        <Text style={{ fontWeight: 'bold' }}>Duration: </Text>
+                        {data.duration || 'Not specified'} days
+                    </Text>
+                    <Text style={styles.text}>
+                        <Text style={{ fontWeight: 'bold' }}>Travel Dates: </Text>
+                        {data.travel_dates || 'Not specified'}
+                    </Text>
+                </View>
+                {/* Daily Itinerary */}
                 {data.itinerary.map((day) => (
-                    <View key={day.day}>
+                    <View key={day.day} wrap={false}>
                         <Text style={styles.dayHeader}>Day {day.day}</Text>
 
-                        <Text style={styles.subHeader}>
-                            <strong>Morning:</strong>
+                        {/* Morning Activities */}
+                        <Text style={styles.subHeader}>Morning Schedule</Text>
+                        <Text style={styles.activityText}>
+                            <Text style={{ fontWeight: 'bold' }}>Activity: </Text>
+                            {day.morning?.activity || 'Not specified'}
                         </Text>
                         <Text style={styles.activityText}>
-                            Visit Mani Bhavan Gandhi Museum to learn about Mahatma Gandhi's life and work. Afterwards, explore the
-                            nearby areas.
+                            <Text style={{ fontWeight: 'bold' }}>Location: </Text>
+                            {day.morning?.location?.name || 'Not specified'}
+                        </Text>
+                        <Text style={styles.activityText}>
+                            <Text style={{ fontWeight: 'bold' }}>Breakfast: </Text>
+                            {day.meals?.breakfast?.name || 'Not specified'}
                         </Text>
 
-                        <Text style={styles.subHeader}>
-                            <strong>Afternoon:</strong>
+                        {/* Afternoon Activities */}
+                        <Text style={styles.subHeader}>Afternoon Schedule</Text>
+                        <Text style={styles.activityText}>
+                            <Text style={{ fontWeight: 'bold' }}>Activity: </Text>
+                            {day.afternoon?.activity || 'Not specified'}
                         </Text>
-                        <Text style={styles.activityText}>Activity: {day.afternoon?.activity || 'Not specified'}</Text>
-                        <Text style={styles.activityText}>Location: {day.afternoon?.location?.name || 'Not specified'}</Text>
-                        <Text style={styles.activityText}>Lunch: {day.meals?.lunch?.name || 'Not specified'}</Text>
+                        <Text style={styles.activityText}>
+                            <Text style={{ fontWeight: 'bold' }}>Location: </Text>
+                            {day.afternoon?.location?.name || 'Not specified'}
+                        </Text>
+                        <Text style={styles.activityText}>
+                            <Text style={{ fontWeight: 'bold' }}>Lunch: </Text>
+                            {day.meals?.lunch?.name || 'Not specified'}
+                        </Text>
 
-                        <Text style={styles.subHeader}>
-                            <strong>Evening:</strong>
+                        {/* Evening Activities */}
+                        <Text style={styles.subHeader}>Evening Schedule</Text>
+                        <Text style={styles.activityText}>
+                            <Text style={{ fontWeight: 'bold' }}>Activity: </Text>
+                            {day.evening?.activity || 'Not specified'}
                         </Text>
-                        <Text style={styles.activityText}>Activity: {day.evening?.activity || 'Not specified'}</Text>
-                        <Text style={styles.activityText}>Location: {day.evening?.location?.name || 'Not specified'}</Text>
-                        <Text style={styles.activityText}>Dinner: {day.meals?.dinner?.name || 'Not specified'}</Text>
+                        <Text style={styles.activityText}>
+                            <Text style={{ fontWeight: 'bold' }}>Location: </Text>
+                            {day.evening?.location?.name || 'Not specified'}
+                        </Text>
+                        <Text style={styles.activityText}>
+                            <Text style={{ fontWeight: 'bold' }}>Dinner: </Text>
+                            {day.meals?.dinner?.name || 'Not specified'}
+                        </Text>
                     </View>
                 ))}
+                {/* Footer */}{' '}
             </View>
         </Page>
     </Document>
@@ -159,6 +261,9 @@ export default function ItineraryDetails() {
     const [showFlights, setShowFlights] = useState(false);
     const [userLocation, setUserLocation] = useState(null);
     const [amadeusToken, setAmadeusToken] = useState(null);
+
+    // Add this new state variable in your component
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         const fetchItinerary = async () => {
@@ -436,6 +541,25 @@ Dinner: ${day.meals?.dinner?.name || 'Not specified'}
         ];
     };
 
+    // Add this function in your component
+    const handleDelete = async () => {
+        if (!window.confirm('Are you sure you want to delete this itinerary? This action cannot be undone.')) {
+            return;
+        }
+
+        setIsDeleting(true);
+        try {
+            await deleteDoc(doc(db, 'itineraries', id));
+            toast.success('Itinerary deleted successfully');
+            navigate('/my-itineraries');
+        } catch (error) {
+            console.error('Error deleting itinerary:', error);
+            toast.error('Failed to delete itinerary');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -469,9 +593,27 @@ Dinner: ${day.meals?.dinner?.name || 'Not specified'}
                         Back to My Itineraries
                     </Link>
                     <h1 className="text-4xl font-bold text-gray-900 mb-2">Trip to {itinerary.destination.name}</h1>
-                    <p className="text-gray-600">
-                        {itinerary.duration} days • {itinerary.travel_dates}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-4 text-gray-600">
+                        <span>
+                            {itinerary.duration} days • {itinerary.travel_dates}
+                        </span>
+                        {itinerary.budget?.daily_range?.min && itinerary.budget?.daily_range?.max && (
+                            <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                </svg>
+                                <span>
+                                    ₹{itinerary.budget.daily_range.min.toLocaleString()} - ₹
+                                    {itinerary.budget.daily_range.max.toLocaleString()} per day
+                                </span>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Main Content */}
@@ -485,39 +627,47 @@ Dinner: ${day.meals?.dinner?.name || 'Not specified'}
                                 animate={{ opacity: 1, y: 0 }}
                                 className="bg-white rounded-xl shadow-lg p-6"
                             >
-                                <h2 className="text-2xl font-semibold mb-4">Day {day.day}</h2>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-2xl font-semibold">Day {day.day}</h2>
+                                    {day.daily_total && (
+                                        <div className="text-right">
+                                            <span className="text-sm text-gray-500">Daily Total</span>
+                                            <p className="text-xl font-bold text-gray-900">₹{day.daily_total.toLocaleString()}</p>
+                                        </div>
+                                    )}
+                                </div>
+
                                 {['morning', 'afternoon', 'evening'].map((timeOfDay) => (
                                     <div key={timeOfDay} className="mb-6 last:mb-0">
                                         <div className="flex items-start justify-between p-4 bg-gray-50 rounded-lg">
-                                            <div>
+                                            <div className="flex-1">
                                                 <h3 className="text-lg font-medium capitalize mb-2">
                                                     {timeOfDay}: {day[timeOfDay]?.activity || 'Not specified'}
                                                 </h3>
                                                 <p className="text-gray-600 mb-2">
                                                     {day[timeOfDay]?.location?.name && (
-                                                        <a
-                                                            href={`https://www.google.com/maps?q=${encodeURIComponent(
-                                                                day[timeOfDay].location.name
-                                                            )}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="hover:text-blue-600 hover:underline flex items-center gap-1"
-                                                        >
-                                                            {day[timeOfDay].location.name}
+                                                        <span className="flex items-center gap-1">
                                                             <svg
                                                                 className="w-4 h-4"
                                                                 fill="none"
-                                                                stroke="currentColor"
                                                                 viewBox="0 0 24 24"
+                                                                stroke="currentColor"
                                                             >
                                                                 <path
                                                                     strokeLinecap="round"
                                                                     strokeLinejoin="round"
                                                                     strokeWidth={2}
-                                                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                                                                />
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    strokeWidth={2}
+                                                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                                                                 />
                                                             </svg>
-                                                        </a>
+                                                            {day[timeOfDay].location.name}
+                                                        </span>
                                                     )}
                                                 </p>
                                                 <p className="text-sm text-gray-500">
@@ -529,9 +679,28 @@ Dinner: ${day.meals?.dinner?.name || 'Not specified'}
                                                             ? 'lunch'
                                                             : 'dinner'
                                                     ]?.name || 'Not specified'}
+                                                    {day.meals?.[
+                                                        timeOfDay === 'morning'
+                                                            ? 'breakfast'
+                                                            : timeOfDay === 'afternoon'
+                                                            ? 'lunch'
+                                                            : 'dinner'
+                                                    ]?.cost && (
+                                                        <span className="ml-2">
+                                                            (₹
+                                                            {day.meals[
+                                                                timeOfDay === 'morning'
+                                                                    ? 'breakfast'
+                                                                    : timeOfDay === 'afternoon'
+                                                                    ? 'lunch'
+                                                                    : 'dinner'
+                                                            ].cost.toLocaleString()}
+                                                            )
+                                                        </span>
+                                                    )}
                                                 </p>
                                             </div>
-                                            <span className="text-gray-500">
+                                            <span className="text-gray-500 whitespace-nowrap ml-4">
                                                 {timeOfDay === 'morning'
                                                     ? '09:00 AM'
                                                     : timeOfDay === 'afternoon'
@@ -575,6 +744,33 @@ Dinner: ${day.meals?.dinner?.name || 'Not specified'}
                                     <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white text-2xl">
                                         📧
                                     </span>
+                                </motion.button>
+
+                                {/* Add Delete Button */}
+                                <motion.button
+                                    whileHover={{ scale: 1 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={handleDelete}
+                                    disabled={isDeleting}
+                                    className="group relative px-6 py-3 border-2 border-red-500 text-red-500 rounded-xl font-medium 
+                                        transition-all duration-300 hover:bg-red-500 hover:text-white disabled:opacity-50 
+                                        disabled:cursor-not-allowed"
+                                >
+                                    {isDeleting ? (
+                                        <div className="flex items-center justify-center">
+                                            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                                            Deleting...
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <span className="opacity-100 group-hover:opacity-0 transition-opacity duration-300">
+                                                Delete Itinerary
+                                            </span>
+                                            <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white text-2xl">
+                                                🗑️
+                                            </span>
+                                        </>
+                                    )}
                                 </motion.button>
                             </div>
                         </div>

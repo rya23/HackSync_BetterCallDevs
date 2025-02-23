@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { Link } from 'react-router-dom';
@@ -62,6 +62,77 @@ const cityIcons = {
 export default function MyItineraries() {
     const [itineraries, setItineraries] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activityCounts, setActivityCounts] = useState({});
+    const [userProfile, setUserProfile] = useState(null);
+
+    // Helper function to determine region from coordinates
+    const getRegionFromCoordinates = (coordinates) => {
+        const { latitude, longitude } = coordinates;
+
+        // Simple region determination based on coordinates
+        if (latitude > 0) {
+            if (longitude > 0) {
+                return 'Asia/Europe';
+            } else {
+                return 'North America';
+            }
+        } else {
+            if (longitude > 0) {
+                return 'Africa/Oceania';
+            } else {
+                return 'South America';
+            }
+        }
+    };
+
+    // Calculate user profile based on itineraries
+    const calculateUserProfile = useMemo(() => {
+        if (!itineraries.length) return null;
+
+        const profile = {
+            totalTrips: itineraries.length,
+            averageDuration: 0,
+            preferredCompanionType: {},
+            budgetPreferences: {
+                high: 0,
+                medium: 0,
+                low: 0,
+            },
+            mostVisitedRegions: {},
+            upcomingTrips: 0,
+            completedTrips: 0,
+        };
+
+        let totalDuration = 0;
+
+        itineraries.forEach((itinerary) => {
+            totalDuration += itinerary.duration;
+
+            profile.preferredCompanionType[itinerary.companions] =
+                (profile.preferredCompanionType[itinerary.companions] || 0) + 1;
+
+            // Handle budget amount directly
+            if (itinerary.budget?.amount) {
+                profile.budgetPreferences[itinerary.budget.amount]++;
+            }
+
+            // Track trip timing
+            const tripDate = new Date(itinerary.travel_dates);
+            const today = new Date();
+            if (tripDate > today) {
+                profile.upcomingTrips++;
+            } else {
+                profile.completedTrips++;
+            }
+
+            // Track regions (using rough coordinates)
+            const region = getRegionFromCoordinates(itinerary.destination.coordinates);
+            profile.mostVisitedRegions[region] = (profile.mostVisitedRegions[region] || 0) + 1;
+        });
+
+        profile.averageDuration = totalDuration / itineraries.length;
+        return profile;
+    }, [itineraries]);
 
     useEffect(() => {
         const fetchItineraries = async () => {
@@ -74,6 +145,16 @@ export default function MyItineraries() {
                     id: doc.id,
                     ...doc.data(),
                 }));
+
+                // Calculate activity counts
+                const counts = {};
+                itinerariesData.forEach((itinerary) => {
+                    itinerary.activities.forEach((activity) => {
+                        counts[activity] = (counts[activity] || 0) + 1;
+                    });
+                });
+
+                setActivityCounts(counts);
                 setItineraries(itinerariesData);
             } catch (error) {
                 console.error('Error fetching itineraries:', error);
@@ -84,6 +165,10 @@ export default function MyItineraries() {
 
         fetchItineraries();
     }, []);
+
+    useEffect(() => {
+        setUserProfile(calculateUserProfile);
+    }, [calculateUserProfile]);
 
     const getCityIcon = (cityName) => {
         const lowercaseCity = cityName.toLowerCase();
@@ -103,6 +188,64 @@ export default function MyItineraries() {
             <motion.h1 initial={{ y: -20 }} animate={{ y: 0 }} className="text-4xl font-bold mb-8">
                 My Itineraries
             </motion.h1>
+
+            {/* User Profile Summary */}
+            {userProfile && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100"
+                >
+                    <h2 className="text-xl font-semibold mb-4">Your Travel Profile</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                            <p className="text-gray-600">Total Trips: {userProfile.totalTrips}</p>
+                            <p className="text-gray-600">Average Duration: {userProfile.averageDuration.toFixed(1)} days</p>
+                            <p className="text-gray-600">Upcoming Trips: {userProfile.upcomingTrips}</p>
+                            <p className="text-gray-600">Completed Trips: {userProfile.completedTrips}</p>
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-gray-600">Preferred Travel Style:</p>
+                            {Object.entries(userProfile.preferredCompanionType)
+                                .sort(([, a], [, b]) => b - a)
+                                .map(([type, count]) => (
+                                    <span key={type} className="inline-block bg-gray-100 px-3 py-1 rounded-full text-sm mr-2">
+                                        {type} ({count})
+                                    </span>
+                                ))}
+                        </div>
+                        <div className="space-y-2">
+                            <p className="text-gray-600">Budget Preference:</p>
+                            {Object.entries(userProfile.budgetPreferences)
+                                .filter(([, count]) => count > 0)
+                                .map(([level, count]) => (
+                                    <span key={level} className="inline-block bg-gray-100 px-3 py-1 rounded-full text-sm mr-2">
+                                        {level.charAt(0).toUpperCase() + level.slice(1)} ({count})
+                                    </span>
+                                ))}
+                        </div>
+                    </div>
+                </motion.div>
+            )}
+
+            {/* Add Activity Summary Section */}
+            {Object.keys(activityCounts).length > 0 && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100"
+                >
+                    <h2 className="text-xl font-semibold mb-4">Activity Summary</h2>
+                    <div className="flex flex-wrap gap-3">
+                        {Object.entries(activityCounts).map(([activity, count]) => (
+                            <div key={activity} className="bg-gray-100 px-4 py-2 rounded-full flex items-center gap-2">
+                                <span className="font-medium">{activity}</span>
+                                <span className="bg-black text-white rounded-full px-2 py-0.5 text-sm">{count}</span>
+                            </div>
+                        ))}
+                    </div>
+                </motion.div>
+            )}
 
             {itineraries.length === 0 ? (
                 <div className="text-center py-12">
