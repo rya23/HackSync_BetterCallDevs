@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
+    "@google/generative-ai": "^0.22.0",
     "@huggingface/inference": "^3.3.6",
     "@react-pdf/renderer": "^4.2.2",
     "axios": "^1.7.9",

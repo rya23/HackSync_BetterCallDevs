@@ -6,6 +6,7 @@ import MapComponent from '../components/TestMap';
 import EmailModal from '../components/EmailModal';
 import { motion } from 'framer-motion';
 import { Page, Text, View, Document, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const styles = StyleSheet.create({
     page: { padding: 30, backgroundColor: '#ffffff' },
@@ -32,12 +33,30 @@ const TravelPDF = ({ data }) => (
     </Document>
 );
 
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI('AIzaSyAew4snbMiz71yOBzM8-pj_cvEuvd0OjlA');
+
+const model = genAI.getGenerativeModel({
+    model: "gemini-pro",
+    generationConfig: {
+        temperature: 1,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 8192,
+    },
+});
+
 export default function ItineraryDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [itinerary, setItinerary] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+    
+    // Chat state
+    const [chatHistory, setChatHistory] = useState([]);
+    const [userInput, setUserInput] = useState('');
+    const [isChatLoading, setIsChatLoading] = useState(false);
 
     useEffect(() => {
         const fetchItinerary = async () => {
@@ -47,6 +66,7 @@ export default function ItineraryDetails() {
 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
+                    console.log(data)
                     // Verify the itinerary belongs to the current user
                     if (data.userId !== auth.currentUser?.uid) {
                         navigate('/my-itineraries');
@@ -66,6 +86,79 @@ export default function ItineraryDetails() {
 
         fetchItinerary();
     }, [id, navigate]);
+
+    // Handle chat submission
+    const handleChatSubmit = async (e) => {
+        e.preventDefault();
+        if (!userInput.trim()) return;
+
+        const userMessage = userInput.trim();
+        setUserInput('');
+        // Show the user message in chat with 'user' role
+        setChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
+        setIsChatLoading(true);
+
+        try {
+            // Combine user input with itinerary data in a structured format
+            const combinedMessage = `
+Question: ${userMessage}
+
+Current Itinerary Details:
+Destination: ${itinerary.destination.name}
+Travel Dates: ${itinerary.travel_dates}
+Duration: ${itinerary.duration} days
+
+Daily Schedule:
+${itinerary.itinerary.map(day => `
+Day ${day.day}:
+Morning: ${day.morning.activity} at ${day.morning.location.name}
+Afternoon: ${day.afternoon.activity} at ${day.afternoon.location.name}
+Evening: ${day.evening.activity} at ${day.evening.location.name}
+
+Meals:
+Breakfast: ${day.meals.breakfast.name}
+Lunch: ${day.meals.lunch.name}
+Dinner: ${day.meals.dinner.name}
+`).join('\n')}`;
+
+            // Convert chat history to use 'model' instead of 'assistant'
+            const formattedHistory = chatHistory.map(msg => ({
+                role: msg.role === 'assistant' ? 'model' : msg.role,
+                parts: [{ text: msg.content }]
+            }));
+
+            const chat = model.startChat({
+                history: formattedHistory,
+            });
+
+            const result = await chat.sendMessage(combinedMessage);
+            const response = await result.response;
+            let text = response.text();
+            
+            // Clean up the response text
+            text = text
+                .replace(/\*\*/g, '')
+                .replace(/\*/g, '')
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line)
+                .join('\n');
+
+            // Store in chat history as 'assistant' for display purposes
+            setChatHistory(prev => [...prev, { 
+                role: 'assistant', // Keep as 'assistant' for UI purposes
+                content: text 
+            }]);
+        } catch (error) {
+            console.error('Error sending message:', error);
+            setChatHistory(prev => [...prev, { 
+                role: 'assistant', 
+                content: 'Sorry, I encountered an error. Please try again.' 
+            }]);
+        } finally {
+            setIsChatLoading(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -179,6 +272,55 @@ export default function ItineraryDetails() {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Chat Interface */}
+                <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+                    <h2 className="text-2xl font-semibold mb-4">Chat with AI Assistant</h2>
+                    
+                    {/* Chat Messages */}
+                    <div className="space-y-4 mb-4 max-h-96 overflow-y-auto">
+                        {chatHistory.map((message, index) => (
+                            <div
+                                key={index}
+                                className={`p-4 rounded-lg ${
+                                    message.role === 'user'
+                                        ? 'bg-blue-100 ml-auto max-w-[80%]'
+                                        : 'bg-gray-100 mr-auto max-w-[80%]'
+                                }`}
+                            >
+                                <p className="text-gray-800">{message.content}</p>
+                            </div>
+                        ))}
+                        {isChatLoading && (
+                            <div className="flex items-center space-x-2">
+                                <div className="animate-bounce h-2 w-2 bg-gray-400 rounded-full"></div>
+                                <div className="animate-bounce h-2 w-2 bg-gray-400 rounded-full delay-100"></div>
+                                <div className="animate-bounce h-2 w-2 bg-gray-400 rounded-full delay-200"></div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Chat Input */}
+                    <form onSubmit={handleChatSubmit} className="flex gap-2">
+                        <input
+                            type="text"
+                            value={userInput}
+                            onChange={(e) => setUserInput(e.target.value)}
+                            placeholder="Ask about your itinerary..."
+                            className="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            disabled={isChatLoading}
+                        />
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            type="submit"
+                            disabled={isChatLoading}
+                            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+                        >
+                            Send
+                        </motion.button>
+                    </form>
                 </div>
             </div>
 
