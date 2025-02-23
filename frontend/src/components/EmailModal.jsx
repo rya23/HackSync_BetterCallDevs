@@ -19,9 +19,11 @@ export default function EmailModal({ isOpen, onClose, itineraryData }) {
 
         data.itinerary.forEach((day) => {
             message += `Day ${day.day}:\n`;
-            message += `Morning: ${day.morning.activity} at ${day.morning.location.name}\n`;
-            message += `Afternoon: ${day.afternoon.activity} at ${day.afternoon.location.name}\n`;
-            message += `Evening: ${day.evening.activity} at ${day.evening.location.name}\n\n`;
+            message += `Morning: ${day.morning.activity}${day.morning.location ? ` at ${day.morning.location.name}` : ''}\n`;
+            message += `Afternoon: ${day.afternoon.activity}${
+                day.afternoon.location ? ` at ${day.afternoon.location.name}` : ''
+            }\n`;
+            message += `Evening: ${day.evening.activity}${day.evening.location ? ` at ${day.evening.location.name}` : ''}\n\n`;
 
             message += `Meals:\n`;
             message += `Breakfast: ${day.meals.breakfast.name}\n`;

@@ -26,8 +26,7 @@ const JumpToMap = ({ center }) => {
 
 const MapComponent = ({ itineraryData }) => {
     const [selectedDay, setSelectedDay] = useState(1);
-    console.log(itineraryData);
-
+    
     // Get initial center from first day's morning activity
     const initialCenter = itineraryData?.itinerary[0]?.morning?.location?.coordinates
         ? [
@@ -35,6 +34,39 @@ const MapComponent = ({ itineraryData }) => {
               itineraryData.itinerary[0].morning.location.coordinates.longitude,
           ]
         : [19.076, 72.8777]; // Default to Mumbai
+
+    // Helper function to get locations with coordinates for the selected day
+    const getDayLocations = (day) => {
+        const locations = [];
+        
+        // Add activity locations if they exist
+        ['morning', 'afternoon', 'evening'].forEach(timeOfDay => {
+            if (day[timeOfDay]?.location?.coordinates) {
+                locations.push({
+                    ...day[timeOfDay].location,
+                    title: `${timeOfDay}: ${day[timeOfDay].activity}`,
+                    time: timeOfDay
+                });
+            }
+        });
+
+        // Add meal locations
+        ['breakfast', 'lunch', 'dinner'].forEach(meal => {
+            if (day.meals[meal]?.coordinates) {
+                locations.push({
+                    name: day.meals[meal].name,
+                    coordinates: day.meals[meal].coordinates,
+                    title: `${meal}: ${day.meals[meal].name}`,
+                    time: meal
+                });
+            }
+        });
+
+        return locations;
+    };
+
+    const selectedDayData = itineraryData?.itinerary.find(day => day.day === selectedDay);
+    const locations = selectedDayData ? getDayLocations(selectedDayData) : [];
 
     return (
         <div className="h-full">
@@ -58,36 +90,20 @@ const MapComponent = ({ itineraryData }) => {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
-
-                <JumpToMap center={initialCenter} />
-
-                {itineraryData?.itinerary
-                    .filter((day) => day.day === selectedDay)
-                    .map((day) => {
-                        const locations = [
-                            { time: 'Morning', ...day.morning, meal: day.meals.breakfast },
-                            { time: 'Afternoon', ...day.afternoon, meal: day.meals.lunch },
-                            { time: 'Evening', ...day.evening, meal: day.meals.dinner },
-                        ];
-
-                        return locations.map((loc, index) => {
-                            const position = [loc.location.coordinates.latitude, loc.location.coordinates.longitude];
-
-                            return (
-                                <Marker key={index} position={position}>
-                                    <Popup>
-                                        <strong>
-                                            {loc.time}: {loc.activity}
-                                        </strong>
-                                        <br />
-                                        Location: {loc.location.name}
-                                        <br />
-                                        Nearby Restaurant: {loc.meal.name}
-                                    </Popup>
-                                </Marker>
-                            );
-                        });
-                    })}
+                
+                {locations.map((loc, index) => (
+                    <Marker
+                        key={index}
+                        position={[loc.coordinates.latitude, loc.coordinates.longitude]}
+                    >
+                        <Popup>
+                            <div>
+                                <h3 className="font-bold">{loc.title}</h3>
+                                <p>{loc.name}</p>
+                            </div>
+                        </Popup>
+                    </Marker>
+                ))}
             </MapContainer>
         </div>
     );

@@ -18,6 +18,9 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     text: { fontSize: 12, marginBottom: 8, color: '#4a5568' },
+    dayHeader: { fontSize: 18, marginBottom: 10, color: '#2d3748', marginTop: 15 },
+    subHeader: { fontSize: 14, marginBottom: 5, color: '#4a5568', marginTop: 10 },
+    activityText: { fontSize: 10, marginBottom: 5, color: '#718096' },
 });
 
 const TravelPDF = ({ data }) => (
@@ -25,9 +28,30 @@ const TravelPDF = ({ data }) => (
         <Page size="A4" style={styles.page}>
             <View style={styles.section}>
                 <Text style={styles.header}>Travel Itinerary</Text>
-                <Text style={styles.text}>Destination: {data.destination.name}</Text>
-                <Text style={styles.text}>Duration: {data.duration} days</Text>
-                <Text style={styles.text}>Travel Dates: {data.travel_dates}</Text>
+                <Text style={styles.text}>Destination: {data.destination?.name || 'Not specified'}</Text>
+                <Text style={styles.text}>Duration: {data.duration || 'Not specified'} days</Text>
+                <Text style={styles.text}>Travel Dates: {data.travel_dates || 'Not specified'}</Text>
+
+                {data.itinerary.map((day) => (
+                    <View key={day.day}>
+                        <Text style={styles.dayHeader}>Day {day.day}</Text>
+
+                        <Text style={styles.subHeader}>Morning</Text>
+                        <Text style={styles.activityText}>Activity: {day.morning?.activity || 'Not specified'}</Text>
+                        <Text style={styles.activityText}>Location: {day.morning?.location?.name || 'Not specified'}</Text>
+                        <Text style={styles.activityText}>Breakfast: {day.meals?.breakfast?.name || 'Not specified'}</Text>
+
+                        <Text style={styles.subHeader}>Afternoon</Text>
+                        <Text style={styles.activityText}>Activity: {day.afternoon?.activity || 'Not specified'}</Text>
+                        <Text style={styles.activityText}>Location: {day.afternoon?.location?.name || 'Not specified'}</Text>
+                        <Text style={styles.activityText}>Lunch: {day.meals?.lunch?.name || 'Not specified'}</Text>
+
+                        <Text style={styles.subHeader}>Evening</Text>
+                        <Text style={styles.activityText}>Activity: {day.evening?.activity || 'Not specified'}</Text>
+                        <Text style={styles.activityText}>Location: {day.evening?.location?.name || 'Not specified'}</Text>
+                        <Text style={styles.activityText}>Dinner: {day.meals?.dinner?.name || 'Not specified'}</Text>
+                    </View>
+                ))}
             </View>
         </Page>
     </Document>
@@ -37,7 +61,7 @@ const TravelPDF = ({ data }) => (
 const genAI = new GoogleGenerativeAI('AIzaSyAew4snbMiz71yOBzM8-pj_cvEuvd0OjlA');
 
 const model = genAI.getGenerativeModel({
-    model: "gemini-pro",
+    model: 'gemini-pro',
     generationConfig: {
         temperature: 1,
         topP: 0.95,
@@ -52,7 +76,7 @@ export default function ItineraryDetails() {
     const [itinerary, setItinerary] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-    
+
     // Chat state
     const [chatHistory, setChatHistory] = useState([]);
     const [userInput, setUserInput] = useState('');
@@ -66,7 +90,7 @@ export default function ItineraryDetails() {
 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    console.log(data)
+                    console.log(data);
                     // Verify the itinerary belongs to the current user
                     if (data.userId !== auth.currentUser?.uid) {
                         navigate('/my-itineraries');
@@ -95,7 +119,7 @@ export default function ItineraryDetails() {
         const userMessage = userInput.trim();
         setUserInput('');
         // Show the user message in chat with 'user' role
-        setChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
+        setChatHistory((prev) => [...prev, { role: 'user', content: userMessage }]);
         setIsChatLoading(true);
 
         try {
@@ -104,27 +128,31 @@ export default function ItineraryDetails() {
 Question: ${userMessage}
 
 Current Itinerary Details:
-Destination: ${itinerary.destination.name}
-Travel Dates: ${itinerary.travel_dates}
-Duration: ${itinerary.duration} days
+Destination: ${itinerary.destination?.name || 'Not specified'}
+Travel Dates: ${itinerary.travel_dates || 'Not specified'}
+Duration: ${itinerary.duration || 'Not specified'} days
 
 Daily Schedule:
-${itinerary.itinerary.map(day => `
+${itinerary.itinerary
+    .map(
+        (day) => `
 Day ${day.day}:
-Morning: ${day.morning.activity} at ${day.morning.location.name}
-Afternoon: ${day.afternoon.activity} at ${day.afternoon.location.name}
-Evening: ${day.evening.activity} at ${day.evening.location.name}
+Morning: ${day.morning?.activity || 'Not specified'} at ${day.morning?.location?.name || 'Not specified'}
+Afternoon: ${day.afternoon?.activity || 'Not specified'} at ${day.afternoon?.location?.name || 'Not specified'}
+Evening: ${day.evening?.activity || 'Not specified'} at ${day.evening?.location?.name || 'Not specified'}
 
 Meals:
-Breakfast: ${day.meals.breakfast.name}
-Lunch: ${day.meals.lunch.name}
-Dinner: ${day.meals.dinner.name}
-`).join('\n')}`;
+Breakfast: ${day.meals?.breakfast?.name || 'Not specified'}
+Lunch: ${day.meals?.lunch?.name || 'Not specified'}
+Dinner: ${day.meals?.dinner?.name || 'Not specified'}
+`
+    )
+    .join('\n')}`;
 
             // Convert chat history to use 'model' instead of 'assistant'
-            const formattedHistory = chatHistory.map(msg => ({
+            const formattedHistory = chatHistory.map((msg) => ({
                 role: msg.role === 'assistant' ? 'model' : msg.role,
-                parts: [{ text: msg.content }]
+                parts: [{ text: msg.content }],
             }));
 
             const chat = model.startChat({
@@ -134,27 +162,33 @@ Dinner: ${day.meals.dinner.name}
             const result = await chat.sendMessage(combinedMessage);
             const response = await result.response;
             let text = response.text();
-            
+
             // Clean up the response text
             text = text
                 .replace(/\*\*/g, '')
                 .replace(/\*/g, '')
                 .split('\n')
-                .map(line => line.trim())
-                .filter(line => line)
+                .map((line) => line.trim())
+                .filter((line) => line)
                 .join('\n');
 
             // Store in chat history as 'assistant' for display purposes
-            setChatHistory(prev => [...prev, { 
-                role: 'assistant', // Keep as 'assistant' for UI purposes
-                content: text 
-            }]);
+            setChatHistory((prev) => [
+                ...prev,
+                {
+                    role: 'assistant', // Keep as 'assistant' for UI purposes
+                    content: text,
+                },
+            ]);
         } catch (error) {
             console.error('Error sending message:', error);
-            setChatHistory(prev => [...prev, { 
-                role: 'assistant', 
-                content: 'Sorry, I encountered an error. Please try again.' 
-            }]);
+            setChatHistory((prev) => [
+                ...prev,
+                {
+                    role: 'assistant',
+                    content: 'Sorry, I encountered an error. Please try again.',
+                },
+            ]);
         } finally {
             setIsChatLoading(false);
         }
@@ -215,20 +249,20 @@ Dinner: ${day.meals.dinner.name}
                                         <div className="flex items-start justify-between p-4 bg-gray-50 rounded-lg">
                                             <div>
                                                 <h3 className="text-lg font-medium capitalize mb-2">
-                                                    {timeOfDay}: {day[timeOfDay].activity}
+                                                    {timeOfDay}: {day[timeOfDay]?.activity || 'Not specified'}
                                                 </h3>
-                                                <p className="text-gray-600 mb-2">{day[timeOfDay].location.name}</p>
+                                                <p className="text-gray-600 mb-2">
+                                                    {day[timeOfDay]?.location?.name || 'Location not specified'}
+                                                </p>
                                                 <p className="text-sm text-gray-500">
                                                     Meal:{' '}
-                                                    {
-                                                        day.meals[
-                                                            timeOfDay === 'morning'
-                                                                ? 'breakfast'
-                                                                : timeOfDay === 'afternoon'
-                                                                ? 'lunch'
-                                                                : 'dinner'
-                                                        ].name
-                                                    }
+                                                    {day.meals?.[
+                                                        timeOfDay === 'morning'
+                                                            ? 'breakfast'
+                                                            : timeOfDay === 'afternoon'
+                                                            ? 'lunch'
+                                                            : 'dinner'
+                                                    ]?.name || 'Not specified'}
                                                 </p>
                                             </div>
                                             <span className="text-gray-500">
@@ -277,7 +311,7 @@ Dinner: ${day.meals.dinner.name}
                 {/* Chat Interface */}
                 <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
                     <h2 className="text-2xl font-semibold mb-4">Chat with AI Assistant</h2>
-                    
+
                     {/* Chat Messages */}
                     <div className="space-y-4 mb-4 max-h-96 overflow-y-auto">
                         {chatHistory.map((message, index) => (
