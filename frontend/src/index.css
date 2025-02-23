@@ -1,3 +1,114 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.banner {
+    height: 100vh;
+    /* background-image: url('https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat; */
+
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+}
+
+.main {
+    text-align: center;
+    font-size: 2rem; /* Adjust size as needed */
+    color: white; /* Ensure visibility on background */
+}
+
+.main svg path {
+    fill: transparent;
+    stroke: black;
+    stroke-width: 2;
+    stroke-dasharray: 360;
+    stroke-dashoffset: 360;
+    animation: textAnimation 4s ease-in-out 1 forwards;
+}
+
+@keyframes textAnimation {
+    0% {
+        stroke-dashoffset: 360;
+    }
+    80% {
+        fill: transparent;
+    }
+    100% {
+        fill: black;
+        stroke-dashoffset: 0;
+    }
+}
+
+/* Intro Animation Styles */
+.intro-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.intro-content {
+  transform: scale(1.2);
+}
+
+.logo-animation {
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.path-animation {
+  stroke-dasharray: 2000;
+  stroke-dashoffset: 2000;
+  animation: drawPath 2s ease-out forwards;
+}
+
+.intro-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 9999;
+  transition: opacity 0.5s ease-out;
+}
+
+.intro-wrapper.fade-out {
+  opacity: 0;
+}
+
+.main-content {
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+
+.main-content.fade-in {
+  opacity: 1;
+}
+
+.main-content.hidden {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes drawPath {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
