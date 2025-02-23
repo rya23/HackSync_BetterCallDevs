@@ -113,6 +113,25 @@ const getCityAirportCode = async (cityName) => {
     }
 };
 
+// Add this function before the component
+const getAmadeusToken = async () => {
+    try {
+        const response = await axios.post(
+            'https://test.api.amadeus.com/v1/security/oauth2/token',
+            'grant_type=client_credentials&client_id=4qAv03rOvqSrdV5uEA7SgAT0y6zxLwIA&client_secret=A1hPpNbQDEuOPDIx',
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            }
+        );
+        return response.data.access_token;
+    } catch (error) {
+        console.error('Error getting Amadeus token:', error);
+        return null;
+    }
+};
+
 export default function ItineraryDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -139,6 +158,7 @@ export default function ItineraryDetails() {
     const [flightsLoading, setFlightsLoading] = useState(false);
     const [showFlights, setShowFlights] = useState(false);
     const [userLocation, setUserLocation] = useState(null);
+    const [amadeusToken, setAmadeusToken] = useState(null);
 
     useEffect(() => {
         const fetchItinerary = async () => {
@@ -169,10 +189,19 @@ export default function ItineraryDetails() {
         fetchItinerary();
     }, [id, navigate]);
 
-    // Replace the previous useEffect for hotels with this new one
+    // Add this useEffect to get the token when component mounts
+    useEffect(() => {
+        const fetchToken = async () => {
+            const token = await getAmadeusToken();
+            setAmadeusToken(token);
+        };
+        fetchToken();
+    }, []);
+
+    // Update the hotels useEffect
     useEffect(() => {
         const fetchHotels = async () => {
-            if (!itinerary?.destination?.coordinates) return;
+            if (!itinerary?.destination?.coordinates || !amadeusToken) return;
 
             setHotelsLoading(true);
             try {
@@ -189,7 +218,7 @@ export default function ItineraryDetails() {
                         hotelSource: 'ALL',
                     },
                     headers: {
-                        Authorization: `Bearer dOyXKlAJ1yQrQLBbALQNms90DGm6`,
+                        Authorization: `Bearer ${amadeusToken}`,
                     },
                 };
 
@@ -203,16 +232,15 @@ export default function ItineraryDetails() {
         };
 
         fetchHotels();
-    }, [itinerary?.destination?.coordinates]);
+    }, [itinerary?.destination?.coordinates, amadeusToken]);
 
-    // Get user's location and nearest airport
+    // Update the user location useEffect
     useEffect(() => {
         const getUserLocation = () => {
-            if (navigator.geolocation) {
+            if (navigator.geolocation && amadeusToken) {
                 navigator.geolocation.getCurrentPosition(async (position) => {
                     const { latitude, longitude } = position.coords;
                     try {
-                        // Get nearest airport using Amadeus API
                         const options = {
                             method: 'GET',
                             url: 'https://test.api.amadeus.com/v1/reference-data/locations/airports',
@@ -223,7 +251,7 @@ export default function ItineraryDetails() {
                                 sort: 'distance',
                             },
                             headers: {
-                                Authorization: `Bearer dOyXKlAJ1yQrQLBbALQNms90DGm6`,
+                                Authorization: `Bearer ${amadeusToken}`,
                             },
                         };
 
@@ -243,16 +271,15 @@ export default function ItineraryDetails() {
         };
 
         getUserLocation();
-    }, []);
+    }, [amadeusToken]);
 
-    // Update the flight search useEffect
+    // Update the flights useEffect
     useEffect(() => {
         const fetchFlights = async () => {
-            if (!userLocation?.nearestAirport || !itinerary?.destination?.name) return;
+            if (!userLocation?.nearestAirport || !itinerary?.destination?.name || !amadeusToken) return;
 
             setFlightsLoading(true);
             try {
-                // Get destination airport code
                 const destinationCode = await getCityAirportCode(itinerary.destination.name);
 
                 if (!destinationCode) {
@@ -260,7 +287,6 @@ export default function ItineraryDetails() {
                     return;
                 }
 
-                // Search for flights directly using airport codes
                 const flightOptions = {
                     method: 'GET',
                     url: 'https://test.api.amadeus.com/v2/shopping/flight-offers',
@@ -279,7 +305,7 @@ export default function ItineraryDetails() {
                         currencyCode: 'INR',
                     },
                     headers: {
-                        Authorization: `Bearer CegOcGSfCKLyXT6lWDVEriXRtTsq`,
+                        Authorization: `Bearer ${amadeusToken}`,
                     },
                 };
 
@@ -293,7 +319,7 @@ export default function ItineraryDetails() {
         };
 
         fetchFlights();
-    }, [userLocation, itinerary?.destination?.name, itinerary?.travel_dates]);
+    }, [userLocation, itinerary?.destination?.name, itinerary?.travel_dates, amadeusToken]);
 
     // Handle chat submission
     const handleChatSubmit = async (e) => {
