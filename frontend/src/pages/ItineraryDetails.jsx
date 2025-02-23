@@ -36,17 +36,15 @@ const TravelPDF = ({ data }) => (
                     <View key={day.day}>
                         <Text style={styles.dayHeader}>Day {day.day}</Text>
 
-                        <Text style={styles.subHeader}>Morning</Text>
-                        <Text style={styles.activityText}>Activity: {day.morning?.activity || 'Not specified'}</Text>
-                        <Text style={styles.activityText}>Location: {day.morning?.location?.name || 'Not specified'}</Text>
-                        <Text style={styles.activityText}>Breakfast: {day.meals?.breakfast?.name || 'Not specified'}</Text>
+                        <Text style={styles.subHeader}><strong>Morning:</strong></Text>
+                        <Text style={styles.activityText}>Visit Mani Bhavan Gandhi Museum to learn about Mahatma Gandhi's life and work. Afterwards, explore the nearby areas.</Text>
 
-                        <Text style={styles.subHeader}>Afternoon</Text>
+                        <Text style={styles.subHeader}><strong>Afternoon:</strong></Text>
                         <Text style={styles.activityText}>Activity: {day.afternoon?.activity || 'Not specified'}</Text>
                         <Text style={styles.activityText}>Location: {day.afternoon?.location?.name || 'Not specified'}</Text>
                         <Text style={styles.activityText}>Lunch: {day.meals?.lunch?.name || 'Not specified'}</Text>
 
-                        <Text style={styles.subHeader}>Evening</Text>
+                        <Text style={styles.subHeader}><strong>Evening:</strong></Text>
                         <Text style={styles.activityText}>Activity: {day.evening?.activity || 'Not specified'}</Text>
                         <Text style={styles.activityText}>Location: {day.evening?.location?.name || 'Not specified'}</Text>
                         <Text style={styles.activityText}>Dinner: {day.meals?.dinner?.name || 'Not specified'}</Text>
@@ -297,12 +295,19 @@ Dinner: ${day.meals?.dinner?.name || 'Not specified'}
                                     {({ loading }) => (loading ? 'Generating PDF...' : 'Download PDF')}
                                 </PDFDownloadLink>
 
-                                <button
+                                <motion.button
+                                    whileHover={{ scale: 1 }}
+                                    whileTap={{ scale: 0.95 }}
                                     onClick={() => setIsEmailModalOpen(true)}
-                                    className="w-full border-2 border-black text-black py-3 rounded-lg hover:bg-gray-50 transition-colors"
+                                    className="group relative px-6 py-3 border-2 border-black text-black rounded-xl font-medium transition-all duration-300 hover:bg-gray-600"
                                 >
-                                    Email Itinerary
-                                </button>
+                                    <span className="opacity-100 group-hover:opacity-0 transition-opacity duration-300">
+                                        Email Itinerary
+                                    </span>
+                                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-white text-2xl">
+                                        📧
+                                    </span>
+                                </motion.button>
                             </div>
                         </div>
                     </div>
@@ -352,7 +357,7 @@ Dinner: ${day.meals?.dinner?.name || 'Not specified'}
                             disabled={isChatLoading}
                             className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:bg-gray-400"
                         >
-                            Send
+                            ➤
                         </motion.button>
                     </form>
                 </div>

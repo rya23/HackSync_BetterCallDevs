@@ -17,6 +17,7 @@ export default function TripPlanner() {
         travelWith: '',
         activities: [],
     });
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
     const handleInputChange = (e) => {
         setFormData({
@@ -219,8 +220,8 @@ export default function TripPlanner() {
                                     key={budget}
                                     type="button"
                                     onClick={() => handleBudgetSelect(budget)}
-                                    className={`p-4 rounded-lg border ${
-                                        formData.budget === budget ? 'border-gray-800' : 'border-gray-300'
+                                    className={`p-4 rounded-lg border transition-colors duration-500 ${
+                                        formData.budget === budget ? 'border-2 border-gray-800 bg-gray-200' : 'border border-gray-300'
                                     }`}
                                 >
                                     {budget}
@@ -254,8 +255,8 @@ export default function TripPlanner() {
                                     key={option}
                                     type="button"
                                     onClick={() => handleTravelWithSelect(option)}
-                                    className={`p-4 rounded-lg border ${
-                                        formData.travelWith === option ? 'border-gray-800' : 'border-gray-300'
+                                    className={`p-4 rounded-lg border transition-colors duration-500 ${
+                                        formData.travelWith === option ? 'border-2 border-gray-800 bg-gray-200' : 'border border-gray-300'
                                     }`}
                                 >
                                     {option}
@@ -298,8 +299,8 @@ export default function TripPlanner() {
                                     key={activity}
                                     type="button"
                                     onClick={() => handleActivityToggle(activity)}
-                                    className={`p-4 rounded-lg border ${
-                                        formData.activities.includes(activity) ? 'border-gray-800' : 'border-gray-300'
+                                    className={`p-4 rounded-lg border transition-colors duration-500 ${
+                                        formData.activities.includes(activity) ? 'border-2 border-gray-800 bg-gray-200' : 'border border-gray-300'
                                     }`}
                                 >
                                     {activity}

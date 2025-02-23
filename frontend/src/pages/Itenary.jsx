@@ -31,139 +31,94 @@ const styles = StyleSheet.create({
         borderBottom: 2,
         borderColor: '#e2e8f0',
     },
-    subHeader: {
-        fontSize: 18,
-        color: '#2d3748',
-        marginBottom: 12,
-        fontWeight: 'bold',
-    },
-    text: {
-        fontSize: 12,
-        marginBottom: 8,
-        color: '#4a5568',
-        lineHeight: 1.5,
-    },
-    highlight: {
-        backgroundColor: '#f7fafc',
-        padding: 10,
-        marginBottom: 10,
-        borderRadius: 4,
-    },
     dayHeader: {
-        fontSize: 16,
+        fontSize: 20,
         color: '#2b6cb0',
-        fontWeight: 'bold',
-        marginTop: 15,
-        marginBottom: 10,
-        paddingBottom: 5,
-        borderBottom: 1,
-        borderColor: '#bee3f8',
+        textAlign: 'center',
+        marginBottom: 20,
     },
     timeBlock: {
-        marginBottom: 12,
+        marginBottom: 15,
         paddingLeft: 10,
     },
-    label: {
-        color: '#718096',
-        fontSize: 10,
-        textTransform: 'uppercase',
-        marginBottom: 3,
+    timeHeader: {
+        fontSize: 16,
+        color: '#2d3748',
+        marginBottom: 8,
     },
-    mealSection: {
-        marginTop: 8,
-        padding: 8,
-        backgroundColor: '#f0fff4',
-        borderRadius: 4,
+    activityLabel: {
+        fontSize: 11,
+        color: '#4a5568',
+        marginBottom: 2,
     },
-    coordinates: {
-        fontSize: 10,
-        color: '#718096',
-        fontStyle: 'italic',
+    activityText: {
+        fontSize: 11,
+        color: '#4a5568',
+        marginBottom: 8,
     },
     footer: {
         position: 'absolute',
         bottom: 30,
-        left: 30,
-        right: 30,
+        left: 0,
+        right: 0,
         textAlign: 'center',
-        color: '#a0aec0',
-        fontSize: 10,
-        borderTop: 1,
-        borderColor: '#e2e8f0',
-        paddingTop: 10,
+        color: '#4A5568',
+        fontSize: 12,
     },
 });
 
 const TravelPDF = ({ data }) => (
     <Document>
+        {/* First page with general information */}
         <Page style={styles.page}>
             <View style={styles.section}>
-                <Text style={styles.header}>Travel Plan</Text>
-
-                <View style={styles.highlight}>
-                    <Text style={styles.label}>Destination</Text>
-                    <Text style={styles.text}>{data.destination.name}</Text>
-                    <Text style={styles.coordinates}>
-                        {data.destination.coordinates.latitude}, {data.destination.coordinates.longitude}
-                    </Text>
-                </View>
-
-                <View style={styles.highlight}>
-                    <Text style={styles.label}>Trip Details</Text>
-                    <Text style={styles.text}>Travel Date: {data.travel_dates}</Text>
-                    <Text style={styles.text}>Duration: {data.duration} days</Text>
-                    <Text style={styles.text}>
-                        Budget: {data.budget.currency} {data.budget.amount}
-                    </Text>
-                </View>
-
-                <View style={styles.highlight}>
-                    <Text style={styles.label}>Trip Preferences</Text>
-                    <Text style={styles.text}>Companions: {data.companions}</Text>
-                    <Text style={styles.text}>Activities: {data.activities.join(', ')}</Text>
-                    <Text style={styles.text}>Other Preferences: {data.other_preferences}</Text>
-                </View>
+                <Text style={styles.header}>Travel Itinerary</Text>
+                <Text style={styles.activityText}>Destination: {data.destination?.name || 'Not specified'}</Text>
+                <Text style={styles.activityText}>Duration: {data.duration || 'Not specified'} days</Text>
+                <Text style={styles.activityText}>Travel Dates: {data.travel_dates || 'Not specified'}</Text>
             </View>
-
-            <View style={styles.section}>
-                <Text style={styles.subHeader}>Itinerary</Text>
-                {data.itinerary.map((dayPlan) => (
-                    <View key={dayPlan.day}>
-                        <Text style={styles.dayHeader}>Day {dayPlan.day}</Text>
-
-                        <View style={styles.timeBlock}>
-                            <Text style={styles.label}>Morning</Text>
-                            <Text style={styles.text}>
-                                {dayPlan.morning.activity} at {dayPlan.morning.location.name}
-                            </Text>
-                        </View>
-
-                        <View style={styles.timeBlock}>
-                            <Text style={styles.label}>Afternoon</Text>
-                            <Text style={styles.text}>
-                                {dayPlan.afternoon.activity} at {dayPlan.afternoon.location.name}
-                            </Text>
-                        </View>
-
-                        <View style={styles.timeBlock}>
-                            <Text style={styles.label}>Evening</Text>
-                            <Text style={styles.text}>
-                                {dayPlan.evening.activity} at {dayPlan.evening.location.name}
-                            </Text>
-                        </View>
-
-                        <View style={styles.mealSection}>
-                            <Text style={styles.label}>Meals</Text>
-                            <Text style={styles.text}>Breakfast: {dayPlan.meals.breakfast.name}</Text>
-                            <Text style={styles.text}>Lunch: {dayPlan.meals.lunch.name}</Text>
-                            <Text style={styles.text}>Dinner: {dayPlan.meals.dinner.name}</Text>
-                        </View>
-                    </View>
-                ))}
-            </View>
-
-            <Text style={styles.footer}>Generated by Your Travel Planner</Text>
+            <Text style={styles.footer}>Powered by DevBlog</Text>
         </Page>
+
+        {/* Separate page for each day */}
+        {data.itinerary.map((day) => (
+            <Page key={day.day} style={styles.page}>
+                <View style={styles.section}>
+                    <Text style={styles.dayHeader}>Day {day.day}</Text>
+
+                    <View style={styles.timeBlock}>
+                        <Text style={styles.timeHeader}>Morning:</Text>
+                        <Text style={styles.activityLabel}>Activity:</Text>
+                        <Text style={styles.activityText}>{day.morning?.activity || 'Not specified'}</Text>
+                        <Text style={styles.activityLabel}>Location:</Text>
+                        <Text style={styles.activityText}>{day.morning?.location?.name || 'Not specified'}</Text>
+                        <Text style={styles.activityLabel}>Breakfast:</Text>
+                        <Text style={styles.activityText}>{day.meals?.breakfast?.name || 'Not specified'}</Text>
+                    </View>
+
+                    <View style={styles.timeBlock}>
+                        <Text style={styles.timeHeader}>Afternoon:</Text>
+                        <Text style={styles.activityLabel}>Activity:</Text>
+                        <Text style={styles.activityText}>{day.afternoon?.activity || 'Not specified'}</Text>
+                        <Text style={styles.activityLabel}>Location:</Text>
+                        <Text style={styles.activityText}>{day.afternoon?.location?.name || 'Not specified'}</Text>
+                        <Text style={styles.activityLabel}>Lunch:</Text>
+                        <Text style={styles.activityText}>{day.meals?.lunch?.name || 'Not specified'}</Text>
+                    </View>
+
+                    <View style={styles.timeBlock}>
+                        <Text style={styles.timeHeader}>Evening:</Text>
+                        <Text style={styles.activityLabel}>Activity:</Text>
+                        <Text style={styles.activityText}>{day.evening?.activity || 'Not specified'}</Text>
+                        <Text style={styles.activityLabel}>Location:</Text>
+                        <Text style={styles.activityText}>{day.evening?.location?.name || 'Not specified'}</Text>
+                        <Text style={styles.activityLabel}>Dinner:</Text>
+                        <Text style={styles.activityText}>{day.meals?.dinner?.name || 'Not specified'}</Text>
+                    </View>
+                </View>
+                <Text style={styles.footer}>Powered by DevBlog</Text>
+            </Page>
+        ))}
     </Document>
 );
 
@@ -649,7 +604,7 @@ export default function Itinerary() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setIsEmailModalOpen(true)}
-                    className="px-6 py-3 border-2 border-black text-black rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                    className="relative px-6 py-3 border-2 border-black text-black rounded-xl font-medium transition-colors duration-300"
                 >
                     Email Itinerary
                 </motion.button>
