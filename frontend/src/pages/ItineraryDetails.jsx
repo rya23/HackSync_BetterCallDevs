@@ -37,15 +37,24 @@ const TravelPDF = ({ data }) => (
                     <View key={day.day}>
                         <Text style={styles.dayHeader}>Day {day.day}</Text>
 
-                        <Text style={styles.subHeader}><strong>Morning:</strong></Text>
-                        <Text style={styles.activityText}>Visit Mani Bhavan Gandhi Museum to learn about Mahatma Gandhi's life and work. Afterwards, explore the nearby areas.</Text>
+                        <Text style={styles.subHeader}>
+                            <strong>Morning:</strong>
+                        </Text>
+                        <Text style={styles.activityText}>
+                            Visit Mani Bhavan Gandhi Museum to learn about Mahatma Gandhi's life and work. Afterwards, explore the
+                            nearby areas.
+                        </Text>
 
-                        <Text style={styles.subHeader}><strong>Afternoon:</strong></Text>
+                        <Text style={styles.subHeader}>
+                            <strong>Afternoon:</strong>
+                        </Text>
                         <Text style={styles.activityText}>Activity: {day.afternoon?.activity || 'Not specified'}</Text>
                         <Text style={styles.activityText}>Location: {day.afternoon?.location?.name || 'Not specified'}</Text>
                         <Text style={styles.activityText}>Lunch: {day.meals?.lunch?.name || 'Not specified'}</Text>
 
-                        <Text style={styles.subHeader}><strong>Evening:</strong></Text>
+                        <Text style={styles.subHeader}>
+                            <strong>Evening:</strong>
+                        </Text>
                         <Text style={styles.activityText}>Activity: {day.evening?.activity || 'Not specified'}</Text>
                         <Text style={styles.activityText}>Location: {day.evening?.location?.name || 'Not specified'}</Text>
                         <Text style={styles.activityText}>Dinner: {day.meals?.dinner?.name || 'Not specified'}</Text>
@@ -139,7 +148,7 @@ export default function ItineraryDetails() {
                         hotelSource: 'ALL',
                     },
                     headers: {
-                        Authorization: `Bearer djtHNE1sqF4dEHBfYGcjJXbVmagZ`,
+                        Authorization: `Bearer Fbn4dUv3lWLfIyGmVQO9gKs9zkMd`,
                     },
                 };
 
@@ -306,7 +315,31 @@ Dinner: ${day.meals?.dinner?.name || 'Not specified'}
                                                     {timeOfDay}: {day[timeOfDay]?.activity || 'Not specified'}
                                                 </h3>
                                                 <p className="text-gray-600 mb-2">
-                                                    {day[timeOfDay]?.location?.name || 'Location not specified'}
+                                                    {day[timeOfDay]?.location?.name && (
+                                                        <a
+                                                            href={`https://www.google.com/maps?q=${encodeURIComponent(
+                                                                day[timeOfDay].location.name
+                                                            )}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="hover:text-blue-600 hover:underline flex items-center gap-1"
+                                                        >
+                                                            {day[timeOfDay].location.name}
+                                                            <svg
+                                                                className="w-4 h-4"
+                                                                fill="none"
+                                                                stroke="currentColor"
+                                                                viewBox="0 0 24 24"
+                                                            >
+                                                                <path
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                    strokeWidth={2}
+                                                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                                                />
+                                                            </svg>
+                                                        </a>
+                                                    )}
                                                 </p>
                                                 <p className="text-sm text-gray-500">
                                                     Meal:{' '}
