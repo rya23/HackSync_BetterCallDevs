@@ -24,14 +24,14 @@
     fill: transparent;
     stroke: black;
     stroke-width: 2;
-    stroke-dasharray: 360;
-    stroke-dashoffset: 360;
+    stroke-dasharray: 480;
+    stroke-dashoffset: 480;
     animation: textAnimation 4s ease-in-out 1 forwards;
 }
 
 @keyframes textAnimation {
     0% {
-        stroke-dashoffset: 360;
+        stroke-dashoffset: 480;
     }
     80% {
         fill: transparent;

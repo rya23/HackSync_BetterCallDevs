@@ -69,7 +69,7 @@ export default function Navbar() {
                                     strokeLinejoin="round"
                                 />
                             </svg>
-                            <span>DevBlog</span>
+                            <span>WayFinder</span>
                         </Link>
                     </motion.h1>
 
