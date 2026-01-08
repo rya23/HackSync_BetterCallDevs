@@ -172,7 +172,7 @@ const TravelPDF = ({ data }) => (
 const genAI = new GoogleGenerativeAI('AIzaSyBy3-sj7-3B9fxutnmFNQEjd1DSfdGpM6o');
 
 const model = genAI.getGenerativeModel({
-    model: 'gemini-pro',
+    model: 'gemini-flash-lite-latest',
     generationConfig: {
         temperature: 1,
         topP: 0.95,
