@@ -10,7 +10,7 @@ import { addDoc, collection } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
 // Initialize Gemini client
-const genAI = new GoogleGenerativeAI('AIzaSyC28IFWjv0_Jn-a7VPEbF5Iz2r7kuQv5xY');
+const genAI = new GoogleGenerativeAI('AIzaSyBy3-sj7-3B9fxutnmFNQEjd1DSfdGpM6o');
 const styles = StyleSheet.create({
     page: {
         padding: 30,
