@@ -169,7 +169,7 @@ const TravelPDF = ({ data }) => (
 );
 
 // Initialize Gemini AI
-const genAI = new GoogleGenerativeAI('AIzaSyAew4snbMiz71yOBzM8-pj_cvEuvd0OjlA');
+const genAI = new GoogleGenerativeAI('AIzaSyBy3-sj7-3B9fxutnmFNQEjd1DSfdGpM6o');
 
 const model = genAI.getGenerativeModel({
     model: 'gemini-pro',
